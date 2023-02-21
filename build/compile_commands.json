@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/home/ilya/OpenGL/Lesson3/build",
+  "command": "/usr/bin/gcc   -g -o CMakeFiles/test.dir/src/main.c.o -c /home/ilya/OpenGL/Lesson3/src/main.c",
+  "file": "/home/ilya/OpenGL/Lesson3/src/main.c",
+  "output": "CMakeFiles/test.dir/src/main.c.o"
+}
+]
