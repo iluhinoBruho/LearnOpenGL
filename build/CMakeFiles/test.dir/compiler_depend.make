@@ -68,6 +68,7 @@ CMakeFiles/test.dir/src/main.c.o: /home/ilya/OpenGL/Lesson3/src/main.c \
   /usr/include/x86_64-linux-gnu/bits/mathcalls-helper-functions.h \
   /usr/include/x86_64-linux-gnu/bits/mathcalls.h \
   /usr/include/memory.h \
+  /home/ilya/OpenGL/Lesson3/src/shader.h \
   /usr/include/GL/glew.h \
   /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h \
   /usr/include/stdint.h \
@@ -85,6 +86,8 @@ CMakeFiles/test.dir/src/main.c.o: /home/ilya/OpenGL/Lesson3/src/main.c \
 /usr/include/x86_64-linux-gnu/bits/wchar.h:
 
 /usr/include/GL/glew.h:
+
+/home/ilya/OpenGL/Lesson3/src/shader.h:
 
 /usr/include/memory.h:
 
