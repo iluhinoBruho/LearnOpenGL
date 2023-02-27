@@ -105,10 +105,10 @@ int main()
         GLfloat timeValue = glfwGetTime();
         double tmp = sin( timeValue );
         GLfloat brightValue = (tmp / 2) + 0.5;
-        GLint vertexColorLocation = glGetUniformLocation(ourShader.Program, "brightness");
+        //GLint vertexColorLocation = glGetUniformLocation(ourShader.Program, "brightness");
         //printf("%f\n", brightValue);
-        glUniform1f(vertexColorLocation, brightValue);
-        
+        //glUniform1f(vertexColorLocation, brightValue);
+        SetFloat(&ourShader, brightValue, "brightness");
 
         // Draw the triangle
         UseShader(&ourShader);

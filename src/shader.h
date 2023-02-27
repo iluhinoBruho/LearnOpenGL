@@ -109,5 +109,10 @@ void UseShader(struct Shader *s){
 }
 
 
+void SetFloat(struct Shader *s, float arg, const char* uniformname){
+    GLint vertexColorLocation = glGetUniformLocation(s->Program, uniformname);
+    glUniform1f(vertexColorLocation, arg);
+}
+
 
 #endif
