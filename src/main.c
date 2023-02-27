@@ -47,6 +47,10 @@ int main()
     // Define the viewport dimensions
     glViewport(0, 0, WIDTH, HEIGHT);
 
+    //defining ability of using alfa channel
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable( GL_BLEND );
+
 
     // Build and compile our shader program
     
@@ -100,9 +104,10 @@ int main()
         // Update the uniform color
         GLfloat timeValue = glfwGetTime();
         double tmp = sin( timeValue );
-        GLfloat greenValue = (tmp / 2) + 0.5;
-        GLint vertexColorLocation = glGetUniformLocation(ourShader.Program, "ourColor");
-        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+        GLfloat brightValue = (tmp / 2) + 0.5;
+        GLint vertexColorLocation = glGetUniformLocation(ourShader.Program, "brightness");
+        //printf("%f\n", brightValue);
+        glUniform1f(vertexColorLocation, brightValue);
         
 
         // Draw the triangle
