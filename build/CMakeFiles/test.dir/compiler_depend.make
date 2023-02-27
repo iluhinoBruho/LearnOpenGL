@@ -76,8 +76,11 @@ CMakeFiles/test.dir/src/main.c.o: /home/ilya/OpenGL/Lesson3/src/main.c \
   /usr/include/x86_64-linux-gnu/bits/stdint-uintn.h \
   /usr/include/GL/glu.h \
   /usr/include/GL/gl.h \
-  /usr/local/include/GLFW/glfw3.h
+  /usr/local/include/GLFW/glfw3.h \
+  /home/ilya/OpenGL/Lesson3/include/SOIL.h
 
+
+/home/ilya/OpenGL/Lesson3/include/SOIL.h:
 
 /usr/local/include/GLFW/glfw3.h:
 

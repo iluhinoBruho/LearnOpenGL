@@ -84,6 +84,11 @@
 				"backtrace" : 2,
 				"fragment" : "-lm",
 				"role" : "libraries"
+			},
+			{
+				"backtrace" : 2,
+				"fragment" : "-lSOIL",
+				"role" : "libraries"
 			}
 		],
 		"language" : "C"
