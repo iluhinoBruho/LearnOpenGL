@@ -109,6 +109,20 @@ int main()
         -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
 
+    // World space positions of our cubes
+    vec3 cubePositions[] = {
+        {0.0f,  0.0f,  0.0f},
+        { 2.0f,  5.0f, -15.0f},
+        {-1.5f, -2.2f, -2.5f},
+        {-3.8f, -2.0f, -12.3f},
+        { 2.4f, -0.4f, -3.5f},
+        {-1.7f,  3.0f, -7.5f},
+        { 1.3f, -2.0f, -2.5f},
+        { 1.5f,  2.0f, -2.5f},
+        { 1.5f,  0.2f, -1.5f},
+        {-1.3f,  1.0f, -1.5f}
+    };
+
     GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -199,17 +213,16 @@ int main()
         UseShader(&ourShader);
         
         // Create transformations
-        mat4 model;
+        //mat4 model;
         mat4 view;
         mat4 projection;
-        glm_mat4_identity(model);
         glm_mat4_identity(view);
         glm_mat4_identity(projection);
 
-        vec3 tmpvec1 = {5.0f, 1.0f, 0.0f};
-        glm_rotate(model, glm_rad((GLfloat)glfwGetTime() * 50.0f), tmpvec1);
-        vec3 tmpvec2 = {0.0f, 0.0f, -3.0f};
-        glm_translate(view, tmpvec2);
+        //vec3 tmpvec1 = {5.0f, 1.0f, 0.0f};
+        //glm_rotate(model, glm_rad((GLfloat)glfwGetTime() * 50.0f), tmpvec1);
+        //vec3 tmpvec2 = ;
+        glm_translate(view, (vec3){0.0f, 0.0f, -3.0f});
         glm_perspective(glm_rad(45.0f), (GLfloat)WIDTH/(GLfloat)HEIGHT, 1.0f, 100.0f, projection);
         
         // Get their uniform location
@@ -218,7 +231,7 @@ int main()
         GLint projLoc = glGetUniformLocation(ourShader.Program, "projection");
 
         // Pass them to the shaders
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model);
+        //glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model);
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, view);
         // Note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, projection); 
@@ -226,7 +239,17 @@ int main()
 
         // Draw container
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        for (GLuint i = 0; i < 10; i++)
+        {
+            // Calculate the model matrix for each object and pass it to shader before drawing
+            mat4 model;
+            glm_mat4_identity(model);
+            glm_translate(model, cubePositions[i]);
+            GLfloat angle = 20.0f * i;
+            glm_rotate(model, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
         glBindVertexArray(0);
 
         // Swap the screen buffers
