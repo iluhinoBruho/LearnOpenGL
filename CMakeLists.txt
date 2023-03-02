@@ -3,4 +3,4 @@ project(test)
 set(SOURCES ./src/main.c)
 add_executable(test ${SOURCES})
 
-target_link_libraries(test glfw GLEW OpenGL m SOIL)
+target_link_libraries(test glfw GLEW OpenGL m SOIL cglm)

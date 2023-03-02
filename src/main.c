@@ -6,6 +6,11 @@
 #include "shader.h"
 #include "../include/SOIL.h"
 
+#include <cglm/cglm.h>
+#include <cglm/struct.h>
+//#include <cglm/gtc/matrix_transform.h>
+//#include <..inclide/GLM/gtc/type_ptr.hpp>
+
 
 // GLEW
 #define GLEW_STATIC
@@ -173,6 +178,20 @@ int main()
         // Activate shader
         UseShader(&ourShader);
         
+        // Create transformations
+        mat4 transform;
+        glm_mat4_identity(transform);
+
+        vec3 tmpvec1 = {0.5f, -0.5f, 0.0f};
+        glm_translate(transform, tmpvec1);
+        vec3 tmpvec2 = {0.0f, 0.0f, 1.0f};
+        glm_rotate(transform, glm_rad((GLfloat)glfwGetTime() * 50.0f), tmpvec2);
+
+        // Get matrix's uniform location and set matrix
+        GLint transformLoc = glGetUniformLocation(ourShader.Program, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, transform);
+
+
         // Draw container
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
