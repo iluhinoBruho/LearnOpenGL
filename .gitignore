@@ -1,3 +1,8 @@
 #build files
+#uncomment in release
 build/CMakeFiles
 build/.cmake
+build/cmake_install.cmake
+build/CMakeCache.txt
+build/compile_commands.json
+build/Makefile
