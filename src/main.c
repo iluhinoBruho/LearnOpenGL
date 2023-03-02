@@ -194,13 +194,6 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        
-        // Update the uniform brightness
-        GLfloat timeValue = glfwGetTime();
-        double tmp = sin( timeValue );
-        GLfloat brightValue = (tmp / 2) + 0.5;
-        SetFloat(&ourShader, brightValue, "brightness");
-
         // Bind Textures using texture units
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture1);
@@ -246,6 +239,19 @@ int main()
             glm_mat4_identity(model);
             glm_translate(model, cubePositions[i]);
             GLfloat angle = 20.0f * i;
+
+             // Update the uniform brightness
+            GLfloat timeValue = glfwGetTime();
+            double tmp = sin( timeValue );
+            GLfloat brightValue = (tmp / 2) + 0.5;
+        
+            if(i%3 == 0){
+                angle = (GLfloat)glfwGetTime() * 50.0f;
+                brightValue = 1;
+            }
+
+            SetFloat(&ourShader, brightValue, "brightness");
+            
             glm_rotate(model, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model);
             glDrawArrays(GL_TRIANGLES, 0, 36);
