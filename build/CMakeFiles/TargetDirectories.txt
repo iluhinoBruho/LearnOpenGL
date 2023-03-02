@@ -1,3 +1,0 @@
-/home/ilya/OpenGL/Lesson3/build/CMakeFiles/test.dir
-/home/ilya/OpenGL/Lesson3/build/CMakeFiles/edit_cache.dir
-/home/ilya/OpenGL/Lesson3/build/CMakeFiles/rebuild_cache.dir
