@@ -5,7 +5,8 @@
 #include <memory.h>
 #include <pthread.h>
 
-#define NUM_THREADS 300
+#define NUM_THREADS 45
+#define ONETHREAD false
 
 // SOIL
 #include "include/SOIL.h"
@@ -138,6 +139,8 @@ int main()
 
     // random numbers generator's seed
     srand(time(NULL));
+
+    // World space positions of our cubes
     vec3 cubePositions[NUM_THREADS];
     for(int i = 0; i < NUM_THREADS; ++i){
         for(int j = 0; j < 3; ++j)
@@ -275,7 +278,7 @@ int main()
         // Note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, projection); 
 
-
+        if(!ONETHREAD){
         pthread_t threads[NUM_THREADS];
         //pthread_mutex_t mutex[10];
         //pthread_cond_t cond[10];
@@ -325,7 +328,7 @@ int main()
         }
         pthread_mutex_unlock(&mutex);
 
-        //pthread_cond_broadcast(&cond);
+        pthread_cond_broadcast(&cond);
         for (int i = 0; i < NUM_THREADS; i++) {
             status = pthread_join(threads[i], (void**)&status_addr);
             if (status != 0) {
@@ -337,22 +340,60 @@ int main()
             glm_translate(*(args[i].model), cubePositions[i]);
             GLfloat angle = 20.0f * i;
 
-             // Update the uniform brightness
+              // Update the uniform brightness
             GLfloat timeValue = glfwGetTime();
             double tmp = sin( timeValue );
-            GLfloat brightValue = 1; //(tmp / 2) + 0.5;
+            GLfloat brightValue = (tmp / 2) + 0.5;
+        
+            if(i%3 == 0){
+                angle = (GLfloat)glfwGetTime() * 50.0f;
+                brightValue = 1;
+            }
 
             SetFloat(&ourShader, brightValue, "brightness");
             
-            //glm_rotate(model, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
+            //glm_rotate(*(args[i].model), glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, *(args[i].model));
             glDrawArrays(GL_TRIANGLES, 0, 36);
 
         }
-
         pthread_mutex_destroy(&mutex);
         pthread_cond_destroy(&cond);
 
+        }else{
+        // Draw container
+        glBindVertexArray(VAO);
+        for (GLuint i = 0; i < NUM_THREADS; i++)
+        {
+            // Calculate the model matrix for each object and pass it to shader before drawing
+            mat4 model;
+            glm_mat4_identity(model);
+            glm_translate(model, cubePositions[i]);
+            GLfloat angle = 20.0f * i;
+
+            struct vec delta = field(cubePositions[i][0], cubePositions[i][1], cubePositions[i][2]);
+
+            cubePositions[i][0] += 0.01 * delta.x;
+            cubePositions[i][1] += 0.01 * delta.y;
+            cubePositions[i][2] += 0.01 * delta.z;
+
+             // Update the uniform brightness
+            GLfloat timeValue = glfwGetTime();
+            double tmp = sin( timeValue );
+            GLfloat brightValue = (tmp / 2) + 0.5;
+        
+            if(i%3 == 0){
+                angle = (GLfloat)glfwGetTime() * 50.0f;
+                brightValue = 1;
+            }
+
+            SetFloat(&ourShader, brightValue, "brightness");
+            
+            //glm_rotate(model, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+        }
         glBindVertexArray(0);
 
         // Swap the screen buffers
