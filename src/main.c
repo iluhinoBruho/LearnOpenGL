@@ -5,6 +5,8 @@
 #include <memory.h>
 #include <pthread.h>
 
+#define NUM_THREADS 150
+
 // SOIL
 #include "include/SOIL.h"
 
@@ -37,6 +39,7 @@ const GLuint WIDTH = 800, HEIGHT = 600;
 // The MAIN function, from here we start the application and run the game loop
 int main()
 {
+
     // Init GLFW
     glfwInit();
     // Set all the required options for GLFW
@@ -117,6 +120,7 @@ int main()
     };
 
     // World space positions of our cubes
+    /*
     vec3 cubePositions[] = {
         {0.0f,  0.0f,  0.0f},
         { 2.0f,  5.0f, -15.0f},
@@ -129,6 +133,19 @@ int main()
         { 1.5f,  0.2f, -1.5f},
         {-1.3f,  1.0f, -1.5f}
     };
+    */
+
+
+    // random numbers generator's seed
+    srand(time(NULL));
+    vec3 cubePositions[NUM_THREADS];
+    for(int i = 0; i < NUM_THREADS; ++i){
+        for(int j = 0; j < 3; ++j){
+            cubePositions[i][j] = (rand() % 20 - 10.0) * 0.5f;
+            printf("%f ", cubePositions[i][j]);
+        }
+        printf("\n");
+    }
 
     GLuint VBO, VAO;
     glGenVertexArrays(1, &VAO);
@@ -188,11 +205,35 @@ int main()
     SOIL_free_image_data(image);
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    
+    // Counting frames for productivity test
+    long long int cnt_frames = 0;
+    long long int frames_x100 = 0;
+    
+    // Time mesurement
+    clock_t start, end;
+    start = clock();
+    double cpu_time_used;
 
-    srand(time(NULL));
     // Game loop
     while (!glfwWindowShouldClose(window))
     {
+        
+        ++cnt_frames;
+        //printf("%d", cnt_frames % 10);
+        //printf("\n");
+        if( cnt_frames % 100 == 0 ){
+            ++frames_x100;
+            cnt_frames = 0;
+            printf("x > %d\n", frames_x100);
+
+            if(frames_x100 % 10 == 0){
+                end = clock();
+                cpu_time_used = difftime(end, start) / CLOCKS_PER_SEC;
+                printf("CPU TIME: %f\n", cpu_time_used);
+                break;
+            }
+        }
         // Check if any events have been activiated (key pressed, mouse moved etc.) and call corresponding response functions
         glfwPollEvents();
 
@@ -238,58 +279,82 @@ int main()
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, projection); 
 
 
-        pthread_t threads[10];
+        pthread_t threads[NUM_THREADS];
+        //pthread_mutex_t mutex[10];
+        //pthread_cond_t cond[10];
         int status;
-        //int args[10]; //=cubePositions
-        vec3* args = &cubePositions;
+        struct thr_pack args[NUM_THREADS];
         int status_addr;
+        int counter = 0;
+        int numproc = 0;
+
+        pthread_mutex_t mutex;
+        pthread_cond_t cond;
+        pthread_cond_init(&cond, NULL);
+        pthread_mutex_init(&mutex, NULL);
 
         // Draw container
         glBindVertexArray(VAO);
-        for (GLuint i = 0; i < 10; i++)
+        for (GLuint i = 0; i < NUM_THREADS; i++)
         {
+            
+            // Calculate the model matrix for each object and pass it to shader before drawing
+            // tried to implement it in different threads
+            // but got wrong frames generation - seems because of absence of broadcast
+            // but after implementing of broadcast still get wrong frames generation
+            mat4 model;
+            
+            
+            args[i].cubePos = &cubePositions[i];
+            args[i].model = &model;
+            args[i].cond = &cond;
+            args[i].mutex = &mutex;
+            args[i].numthreads = NUM_THREADS;
+            args[i].counter = &counter;
+
+
             status = pthread_create(&threads[i], NULL, thread_ex, (void*) &args[i]);
 		    if (status != 0) {
 			    printf("main error: can't create thread, status = %d\n", status);
-			    exit("ERROR_CREATE_THREAD");
+			    exit(ERROR_CREATE_THREAD);
 		    }
+ 
+            
+        }
+        //printf("Main Message\n");
+        pthread_mutex_lock(&mutex);
+        while (counter < NUM_THREADS){
+            pthread_cond_wait(&cond, &mutex);
+        }
+        pthread_mutex_unlock(&mutex);
 
-            // Calculate the model matrix for each object and pass it to shader before drawing
-            mat4 model;
-            glm_mat4_identity(model);
-            //for(int j = 0; j < 3; ++j){
-            //    double m = (rand() % 10) - 4.5;
-            //    cubePositions[i][j] += 0.01 * m;
-            //}
-            glm_translate(model, cubePositions[i]);
+        //pthread_cond_broadcast(&cond);
+        for (int i = 0; i < NUM_THREADS; i++) {
+            status = pthread_join(threads[i], (void**)&status_addr);
+            if (status != 0) {
+                printf("main error: can't join thread, status = %d\n", status);
+                exit(ERROR_JOIN_THREAD);
+            }
+
+            glm_mat4_identity(*(args[i].model));
+            glm_translate(*(args[i].model), cubePositions[i]);
             GLfloat angle = 20.0f * i;
 
              // Update the uniform brightness
             GLfloat timeValue = glfwGetTime();
             double tmp = sin( timeValue );
             GLfloat brightValue = 1; //(tmp / 2) + 0.5;
-        
-            if(i%3 == 0){
-                angle = (GLfloat)glfwGetTime() * 50.0f;
-                brightValue = 1;
-            }
 
             SetFloat(&ourShader, brightValue, "brightness");
             
-            glm_rotate(model, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
-            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model);
+            //glm_rotate(model, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, *(args[i].model));
             glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
-        printf("Main Message\n");
 
-        for (int i = 0; i < 10; i++) {
-            status = pthread_join(threads[i], (void**)&status_addr);
-            if (status != 0) {
-                printf("main error: can't join thread, status = %d\n", status);
-                exit("ERROR_JOIN_THREAD");
-            }
-            printf("joined with address %d\n", status_addr);
         }
+
+        pthread_mutex_destroy(&mutex);
+        pthread_cond_destroy(&cond);
 
         glBindVertexArray(0);
 
@@ -311,3 +376,32 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 }
+
+
+
+            // Calculate the model matrix for each object and pass it to shader before drawing
+            //mat4 model;
+            /*
+
+            glm_mat4_identity(model);
+            glm_translate(model, cubePositions[i]);
+            GLfloat angle = 20.0f * i;
+
+             // Update the uniform brightness
+            GLfloat timeValue = glfwGetTime();
+            double tmp = sin( timeValue );
+            GLfloat brightValue = 1; //(tmp / 2) + 0.5;
+        
+            if(i%3 == 0){
+                angle = (GLfloat)glfwGetTime() * 50.0f;
+                brightValue = 1;
+            }
+
+            SetFloat(&ourShader, brightValue, "brightness");
+            
+            //glm_rotate(model, glm_rad(angle), (vec3){1.0f, 0.3f, 0.5f});
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+
+            
+            */

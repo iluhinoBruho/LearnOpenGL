@@ -8,11 +8,36 @@
 #include <memory.h>
 #include <pthread.h>
 
+#include "shader.h"
+
 #include <cglm/cglm.h>
 #include <cglm/struct.h>
 
+// GLEW
+#define GLEW_STATIC
+#include <GL/glew.h>
+
+// GLFW
+#include <GLFW/glfw3.h>
+
+#define ERROR_CREATE_THREAD 500
+#define ERROR_JOIN_THREAD   600
+#define SUCCESS               0
 
 struct vec{double x;double y;double z;};
+
+
+struct thr_pack
+{
+    vec3* cubePos;
+    mat4* model;
+    pthread_mutex_t* mutex;
+    pthread_cond_t* cond;
+    int* counter;
+    int numthreads;
+    //struct Shader* shader;
+    //GLint* modelLoc;
+};
 
 
 // wierd vec-field
@@ -25,20 +50,64 @@ struct vec field(float x_, float y_, double z_){
 }
 
 // Function to be completed by threads
-void* thread_ex(void* cubePosition){
-    vec3* arg = (vec3*) cubePosition;
-    //memcopy(arg, cubePosition, sizeof(vec3));
-    struct vec delta = field((*arg)[0], (*arg)[1], (*arg)[2]);
+void* thread_ex(void* pack){
+    struct thr_pack* arg = (struct thr_pack*) pack;
+    struct vec delta = field(*(arg->cubePos)[0], *(arg->cubePos)[1], *(arg->cubePos)[2]);
 
-    (*arg)[0] += 0.01 * delta.x;
-    (*arg)[1] += 0.01 * delta.y;
-    (*arg)[2] += 0.01 * delta.z;
-    //for(int j = 0; j < 3; ++j){
-    //    double m = (rand() % 10) - 4.5;  
-    //}
-    printf("doing\n");
+    (*(arg->cubePos))[0] += 0.01 * delta.x;
+    (*(arg->cubePos))[1] += 0.01 * delta.y;
+    (*(arg->cubePos))[2] += 0.01 * delta.z;
+    
+    //glm_mat4_identity(*(arg->model));
+    //glm_translate(*(arg->model), *(arg->cubePos));
+
+    pthread_mutex_lock(arg->mutex);
+    (*(arg->counter))++;
+    //printf("INC NUM COUNTER %d\n", *(arg->counter));
+    if(*(arg->counter) == arg->numthreads){
+        pthread_cond_broadcast(arg->cond);
+    }
+    pthread_mutex_unlock(arg->mutex);
+
     return 0;
 }
+
+
+
+/*
+
+pthread_mutex_lock(arg->mutex);
+
+    glm_mat4_identity(*(arg->model));
+    mat4* tmp = arg->model;
+    vec3* tmp2 = arg->cubePos;
+    printf("APOS:\n");
+    for(int i = 0; i < 4; ++i){
+        for(int j = 0; j < 4; ++j){
+            printf("%f ", (*tmp)[i][j]);
+        }
+        printf("\n");
+    }
+    //printf("pos: %f %f %f\n", *(arg->cubePos)[0], *(arg->cubePos)[1], *(arg->cubePos)[2]);
+    printf("VECPOS %f, %f, %f\n\n", (*(tmp2))[0], (*(tmp2))[1], (*(tmp2))[2]);
+    glm_translate(*tmp, *(arg->cubePos));
+    //printf("Bpos %f, %f, %f", *(arg->model))[0][0], (*(arg->model))[0][1], (*(arg->model))[0][1]);
+
+    printf("\nBPOS:\n");
+    for(int i = 0; i < 4; ++i){
+        for(int j = 0; j < 4; ++j){
+            printf("%f ", (*tmp)[i][j]);
+        }
+        printf("\n");
+    }
+    
+    (*(arg->counter))++;
+    //printf("INC NUM COUNTER %d\n", *(arg->counter));
+    if(*(arg->counter) == arg->numthreads){
+        pthread_cond_broadcast(arg->cond);
+    }
+    pthread_mutex_unlock(arg->mutex);
+*/
 
 
 
