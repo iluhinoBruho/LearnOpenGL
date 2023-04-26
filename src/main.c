@@ -5,7 +5,7 @@
 #include <memory.h>
 #include <pthread.h>
 
-#define NUM_THREADS 150
+#define NUM_THREADS 300
 
 // SOIL
 #include "include/SOIL.h"
@@ -140,11 +140,8 @@ int main()
     srand(time(NULL));
     vec3 cubePositions[NUM_THREADS];
     for(int i = 0; i < NUM_THREADS; ++i){
-        for(int j = 0; j < 3; ++j){
+        for(int j = 0; j < 3; ++j)
             cubePositions[i][j] = (rand() % 20 - 10.0) * 0.5f;
-            printf("%f ", cubePositions[i][j]);
-        }
-        printf("\n");
     }
 
     GLuint VBO, VAO;
@@ -225,7 +222,7 @@ int main()
         if( cnt_frames % 100 == 0 ){
             ++frames_x100;
             cnt_frames = 0;
-            printf("x > %d\n", frames_x100);
+            printf("x100 frames > %d\n", frames_x100);
 
             if(frames_x100 % 10 == 0){
                 end = clock();
