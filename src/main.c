@@ -3,8 +3,14 @@
 #include <string.h>
 #include <math.h>
 #include <memory.h>
-#include "shader.h"
+#include <pthread.h>
+
+// SOIL
 #include "include/SOIL.h"
+
+#include "shader.h"
+#include "model.h"
+//#include "camera.h"
 
 #include <cglm/cglm.h>
 #include <cglm/struct.h>
@@ -18,6 +24,7 @@
 
 // GLFW
 #include <GLFW/glfw3.h>
+
 
 
 // Function prototypes
@@ -182,7 +189,7 @@ int main()
     glBindTexture(GL_TEXTURE_2D, 0);
 
 
-
+    srand(time(NULL));
     // Game loop
     while (!glfwWindowShouldClose(window))
     {
@@ -231,20 +238,36 @@ int main()
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, projection); 
 
 
+        pthread_t threads[10];
+        int status;
+        //int args[10]; //=cubePositions
+        vec3* args = &cubePositions;
+        int status_addr;
+
         // Draw container
         glBindVertexArray(VAO);
         for (GLuint i = 0; i < 10; i++)
         {
+            status = pthread_create(&threads[i], NULL, thread_ex, (void*) &args[i]);
+		    if (status != 0) {
+			    printf("main error: can't create thread, status = %d\n", status);
+			    exit("ERROR_CREATE_THREAD");
+		    }
+
             // Calculate the model matrix for each object and pass it to shader before drawing
             mat4 model;
             glm_mat4_identity(model);
+            //for(int j = 0; j < 3; ++j){
+            //    double m = (rand() % 10) - 4.5;
+            //    cubePositions[i][j] += 0.01 * m;
+            //}
             glm_translate(model, cubePositions[i]);
             GLfloat angle = 20.0f * i;
 
              // Update the uniform brightness
             GLfloat timeValue = glfwGetTime();
             double tmp = sin( timeValue );
-            GLfloat brightValue = (tmp / 2) + 0.5;
+            GLfloat brightValue = 1; //(tmp / 2) + 0.5;
         
             if(i%3 == 0){
                 angle = (GLfloat)glfwGetTime() * 50.0f;
@@ -257,6 +280,17 @@ int main()
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
+        printf("Main Message\n");
+
+        for (int i = 0; i < 10; i++) {
+            status = pthread_join(threads[i], (void**)&status_addr);
+            if (status != 0) {
+                printf("main error: can't join thread, status = %d\n", status);
+                exit("ERROR_JOIN_THREAD");
+            }
+            printf("joined with address %d\n", status_addr);
+        }
+
         glBindVertexArray(0);
 
         // Swap the screen buffers
