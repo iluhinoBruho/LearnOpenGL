@@ -5,8 +5,8 @@
 #include <memory.h>
 #include <pthread.h>
 
-#define NUM_THREADS 45
-#define ONETHREAD false
+#define NUM_THREADS 60
+#define ONETHREAD true
 
 // SOIL
 #include "include/SOIL.h"
@@ -214,6 +214,9 @@ int main()
     clock_t start, end;
     start = clock();
     double cpu_time_used;
+    time_t start_time, end_time;
+    start_time = time(NULL);
+    double exec_time;
 
     // Game loop
     while (!glfwWindowShouldClose(window))
@@ -231,6 +234,9 @@ int main()
                 end = clock();
                 cpu_time_used = difftime(end, start) / CLOCKS_PER_SEC;
                 printf("CPU TIME: %f\n", cpu_time_used);
+                end_time = time(NULL);
+                exec_time = difftime(end_time, start_time);
+                printf("exec time: %f\n", exec_time);
                 break;
             }
         }
@@ -376,6 +382,16 @@ int main()
             cubePositions[i][0] += 0.01 * delta.x;
             cubePositions[i][1] += 0.01 * delta.y;
             cubePositions[i][2] += 0.01 * delta.z;
+
+            // additional calculations
+            mat4 calc;
+            glm_mat4_identity(calc);
+            glm_translate(calc, cubePositions[i]);
+            for(int j = 0; j < 2500*4; ++j){
+                glm_mat4_transpose(calc);
+                glm_translate(calc, cubePositions[i]);
+                glm_mat4_mul(calc, calc, calc);
+            }
 
              // Update the uniform brightness
             GLfloat timeValue = glfwGetTime();

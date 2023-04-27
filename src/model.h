@@ -61,6 +61,16 @@ void* thread_ex(void* pack){
     //glm_mat4_identity(*(arg->model));
     //glm_translate(*(arg->model), *(arg->cubePos));
 
+    // additional calculations
+    mat4 calc;
+    glm_mat4_identity(calc);
+    glm_translate(calc, (*(arg->cubePos)));
+    for(int j = 0; j < 2500*4; ++j){
+        glm_mat4_transpose(calc);
+        glm_translate(calc, (*(arg->cubePos)));
+        glm_mat4_mul(calc, calc, calc);
+    }
+
     pthread_mutex_lock(arg->mutex);
     (*(arg->counter))++;
     //printf("INC NUM COUNTER %d\n", *(arg->counter));
@@ -72,42 +82,6 @@ void* thread_ex(void* pack){
     return 0;
 }
 
-
-
-/*
-
-pthread_mutex_lock(arg->mutex);
-
-    glm_mat4_identity(*(arg->model));
-    mat4* tmp = arg->model;
-    vec3* tmp2 = arg->cubePos;
-    printf("APOS:\n");
-    for(int i = 0; i < 4; ++i){
-        for(int j = 0; j < 4; ++j){
-            printf("%f ", (*tmp)[i][j]);
-        }
-        printf("\n");
-    }
-    //printf("pos: %f %f %f\n", *(arg->cubePos)[0], *(arg->cubePos)[1], *(arg->cubePos)[2]);
-    printf("VECPOS %f, %f, %f\n\n", (*(tmp2))[0], (*(tmp2))[1], (*(tmp2))[2]);
-    glm_translate(*tmp, *(arg->cubePos));
-    //printf("Bpos %f, %f, %f", *(arg->model))[0][0], (*(arg->model))[0][1], (*(arg->model))[0][1]);
-
-    printf("\nBPOS:\n");
-    for(int i = 0; i < 4; ++i){
-        for(int j = 0; j < 4; ++j){
-            printf("%f ", (*tmp)[i][j]);
-        }
-        printf("\n");
-    }
-    
-    (*(arg->counter))++;
-    //printf("INC NUM COUNTER %d\n", *(arg->counter));
-    if(*(arg->counter) == arg->numthreads){
-        pthread_cond_broadcast(arg->cond);
-    }
-    pthread_mutex_unlock(arg->mutex);
-*/
 
 
 
