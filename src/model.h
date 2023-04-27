@@ -37,7 +37,7 @@ struct thr_pack
     pthread_mutex_t* wake_mutex;
     int* counter;
     int numthreads;  
-    int notified; //for cond wrog awake protection
+    int* notified; //for cond wrog awake protection
     //struct Shader* shader;
     //GLint* modelLoc;
 };
@@ -57,7 +57,10 @@ void* thread_ex(void* pack){
     struct thr_pack* arg = (struct thr_pack*) pack;
     printf("Came");
     while(true){
-        if(arg->notified != 0){
+        pthread_mutex_lock(arg->mutex);
+        int havework = *(arg->notified);
+        pthread_mutex_unlock(arg->mutex);
+        if(havework){
             struct vec delta = field(*(arg->cubePos)[0], *(arg->cubePos)[1], *(arg->cubePos)[2]);
 
             (*(arg->cubePos))[0] += 0.01 * delta.x;
@@ -72,7 +75,7 @@ void* thread_ex(void* pack){
             //printf("INC NUM COUNTER %d\n", *(arg->counter));
             if(*(arg->counter) == arg->numthreads){
                 pthread_cond_broadcast(arg->cond);
-                *(arg->counter) = 0;
+                *(arg->notified) = 0;
             }
             pthread_mutex_unlock(arg->mutex);
 
@@ -86,11 +89,11 @@ void* thread_ex(void* pack){
                 glm_mat4_mul(calc, calc, calc);
             }*/
 
-            arg->notified = 0;
+            
         }    
-        //pthread_mutex_lock(arg->wake_mutex);
-        //pthread_cond_wait(arg->wake_cond, arg->wake_mutex);
-        //pthread_mutex_unlock(arg->wake_mutex);
+        pthread_mutex_lock(arg->wake_mutex);
+        pthread_cond_wait(arg->wake_cond, arg->wake_mutex);
+        pthread_mutex_unlock(arg->wake_mutex);
     }
     return 0;
 }

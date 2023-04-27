@@ -331,9 +331,11 @@ int main()
         
         
         // notify threads
-        //pthread_mutex_lock(&wake_mutex);
-        //pthread_cond_broadcast(&wake_cond);
+        pthread_mutex_lock(&wake_mutex);
+        pthread_cond_broadcast(&wake_cond);
         notified = 1;
+        counter = 0;
+        pthread_mutex_unlock(&wake_mutex);
         //pthread_mutex_unlock(&wake_mutex);
         for (GLuint i = 0; i < NUM_THREADS; i++)
         {
