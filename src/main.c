@@ -215,6 +215,51 @@ int main()
     start = clock();
     double cpu_time_used;
 
+    if(ONETHREAD){
+        printf("ONETHREAD");
+    }else{
+        printf("MULTYTHREAD");
+    }
+
+    //starting threads
+    
+    pthread_t threads[NUM_THREADS];
+    //pthread_mutex_t mutex[10];
+    //pthread_cond_t cond[10];
+    int status;
+    struct thr_pack args[NUM_THREADS];
+    int status_addr;
+    int counter = 0;
+    int numproc = 0;
+    int notified = 0;
+
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    pthread_cond_init(&cond, NULL);
+    pthread_mutex_init(&mutex, NULL);
+
+    pthread_mutex_t wake_mutex;
+    pthread_cond_t wake_cond;
+    pthread_cond_init(&wake_cond, NULL);
+    pthread_mutex_init(&wake_mutex, NULL);
+
+    if(!ONETHREAD){
+        for(int i = 0; i < NUM_THREADS; ++i){    
+            mat4 model;   
+            args[i].cubePos = &cubePositions[i];
+            args[i].model = &model;
+            args[i].cond = &cond;
+            args[i].mutex = &mutex;
+            args[i].numthreads = NUM_THREADS;
+            args[i].counter = &counter;
+
+            args[i].wake_cond = &wake_cond;
+            args[i].wake_mutex = &wake_mutex;
+            args[i].notified = &notified;
+        }
+
+    }
+
     // Game loop
     while (!glfwWindowShouldClose(window))
     {
@@ -279,22 +324,17 @@ int main()
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, projection); 
 
         if(!ONETHREAD){
-        pthread_t threads[NUM_THREADS];
-        //pthread_mutex_t mutex[10];
-        //pthread_cond_t cond[10];
-        int status;
-        struct thr_pack args[NUM_THREADS];
-        int status_addr;
-        int counter = 0;
-        int numproc = 0;
-
-        pthread_mutex_t mutex;
-        pthread_cond_t cond;
-        pthread_cond_init(&cond, NULL);
-        pthread_mutex_init(&mutex, NULL);
+        
 
         // Draw container
         glBindVertexArray(VAO);
+        
+        
+        // notify threads
+        //pthread_mutex_lock(&wake_mutex);
+        //pthread_cond_broadcast(&wake_cond);
+        notified = 1;
+        //pthread_mutex_unlock(&wake_mutex);
         for (GLuint i = 0; i < NUM_THREADS; i++)
         {
             
@@ -302,25 +342,13 @@ int main()
             // tried to implement it in different threads
             // but got wrong frames generation - seems because of absence of broadcast
             // but after implementing of broadcast still get wrong frames generation
-            mat4 model;
-            
-            
-            args[i].cubePos = &cubePositions[i];
-            args[i].model = &model;
-            args[i].cond = &cond;
-            args[i].mutex = &mutex;
-            args[i].numthreads = NUM_THREADS;
-            args[i].counter = &counter;
+            // because of that only DELTA POS ~ FIELD calculated in threads
 
+            //notify threads
 
-            status = pthread_create(&threads[i], NULL, thread_ex, (void*) &args[i]);
-		    if (status != 0) {
-			    printf("main error: can't create thread, status = %d\n", status);
-			    exit(ERROR_CREATE_THREAD);
-		    }
- 
             
         }
+
         //printf("Main Message\n");
         pthread_mutex_lock(&mutex);
         while (counter < NUM_THREADS){
@@ -330,17 +358,11 @@ int main()
 
         pthread_cond_broadcast(&cond);
         for (int i = 0; i < NUM_THREADS; i++) {
-            status = pthread_join(threads[i], (void**)&status_addr);
-            if (status != 0) {
-                printf("main error: can't join thread, status = %d\n", status);
-                exit(ERROR_JOIN_THREAD);
-            }
-
             glm_mat4_identity(*(args[i].model));
             glm_translate(*(args[i].model), cubePositions[i]);
             GLfloat angle = 20.0f * i;
 
-              // Update the uniform brightness
+            // Update the uniform brightness
             GLfloat timeValue = glfwGetTime();
             double tmp = sin( timeValue );
             GLfloat brightValue = (tmp / 2) + 0.5;
@@ -357,10 +379,10 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 36);
 
         }
-        pthread_mutex_destroy(&mutex);
-        pthread_cond_destroy(&cond);
-
-        }else{
+        }
+        //ONETHREAD
+        /*
+        else{
         // Draw container
         glBindVertexArray(VAO);
         for (GLuint i = 0; i < NUM_THREADS; i++)
@@ -376,6 +398,16 @@ int main()
             cubePositions[i][0] += 0.01 * delta.x;
             cubePositions[i][1] += 0.01 * delta.y;
             cubePositions[i][2] += 0.01 * delta.z;
+
+            // additional calculations
+            mat4 calc;
+            glm_mat4_identity(calc);
+            glm_translate(calc, cubePositions[i]);
+            for(int j = 0; j < 2500; ++j){
+                glm_mat4_transpose(calc);
+                glm_translate(calc, cubePositions[i]);
+                glm_mat4_mul(calc, calc, calc);
+            }
 
              // Update the uniform brightness
             GLfloat timeValue = glfwGetTime();
@@ -393,12 +425,30 @@ int main()
             glUniformMatrix4fv(modelLoc, 1, GL_FALSE, model);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
-        }
+        */
+        
         glBindVertexArray(0);
 
         // Swap the screen buffers
         glfwSwapBuffers(window);
     }
+
+
+    // join threads and destroy metexes
+    for (int i = 0; i < NUM_THREADS; i++) {
+        status = pthread_join(threads[i], (void**)&status_addr);
+        if (status != 0) {
+            printf("main error: can't join thread, status = %d\n", status);
+            exit(ERROR_JOIN_THREAD);
+        }
+    }
+
+    pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&cond);
+    pthread_mutex_destroy(&wake_mutex);
+    pthread_cond_destroy(&wake_cond);
+
+
     // Properly de-allocate all resources once they've outlived their purpose
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);

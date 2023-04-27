@@ -33,8 +33,11 @@ struct thr_pack
     mat4* model;
     pthread_mutex_t* mutex;
     pthread_cond_t* cond;
+    pthread_cond_t* wake_cond;
+    pthread_mutex_t* wake_mutex;
     int* counter;
-    int numthreads;
+    int numthreads;  
+    int notified; //for cond wrog awake protection
     //struct Shader* shader;
     //GLint* modelLoc;
 };
@@ -52,23 +55,43 @@ struct vec field(float x_, float y_, double z_){
 // Function to be completed by threads
 void* thread_ex(void* pack){
     struct thr_pack* arg = (struct thr_pack*) pack;
-    struct vec delta = field(*(arg->cubePos)[0], *(arg->cubePos)[1], *(arg->cubePos)[2]);
+    printf("Came");
+    while(true){
+        if(arg->notified != 0){
+            struct vec delta = field(*(arg->cubePos)[0], *(arg->cubePos)[1], *(arg->cubePos)[2]);
 
-    (*(arg->cubePos))[0] += 0.01 * delta.x;
-    (*(arg->cubePos))[1] += 0.01 * delta.y;
-    (*(arg->cubePos))[2] += 0.01 * delta.z;
-    
-    //glm_mat4_identity(*(arg->model));
-    //glm_translate(*(arg->model), *(arg->cubePos));
+            (*(arg->cubePos))[0] += 0.01 * delta.x;
+            (*(arg->cubePos))[1] += 0.01 * delta.y;
+            (*(arg->cubePos))[2] += 0.01 * delta.z;
+            
+            //glm_mat4_identity(*(arg->model));
+            //glm_translate(*(arg->model), *(arg->cubePos));
 
-    pthread_mutex_lock(arg->mutex);
-    (*(arg->counter))++;
-    //printf("INC NUM COUNTER %d\n", *(arg->counter));
-    if(*(arg->counter) == arg->numthreads){
-        pthread_cond_broadcast(arg->cond);
+            pthread_mutex_lock(arg->mutex);
+            (*(arg->counter))++;
+            //printf("INC NUM COUNTER %d\n", *(arg->counter));
+            if(*(arg->counter) == arg->numthreads){
+                pthread_cond_broadcast(arg->cond);
+                *(arg->counter) = 0;
+            }
+            pthread_mutex_unlock(arg->mutex);
+
+            //additional calculations
+            /*mat4 calc;
+            glm_mat4_identity(calc);
+            glm_translate(calc, *(arg->cubePos));
+            for(int j = 0; j < 2500; ++j){
+                glm_mat4_transpose(calc);
+                glm_translate(calc, *(arg->cubePos));
+                glm_mat4_mul(calc, calc, calc);
+            }*/
+
+            arg->notified = 0;
+        }    
+        //pthread_mutex_lock(arg->wake_mutex);
+        //pthread_cond_wait(arg->wake_cond, arg->wake_mutex);
+        //pthread_mutex_unlock(arg->wake_mutex);
     }
-    pthread_mutex_unlock(arg->mutex);
-
     return 0;
 }
 
