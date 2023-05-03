@@ -35,6 +35,8 @@ struct thr_pack
     pthread_cond_t* cond;
     int* counter;
     int numthreads;
+    int numobjects;
+    int thread_id;
     //struct Shader* shader;
     //GLint* modelLoc;
 };
@@ -43,45 +45,50 @@ struct thr_pack
 // wierd vec-field
 struct vec field(float x_, float y_, double z_){
     struct vec res;
-    res.x = (rand() % 11 - 5) / (x_ + y_) * z_;
-    res.y = (rand() % 11 - 5) / (x_ + y_) * z_;
-    res.z = (rand() % 11 - 5) / (x_ + y_) * z_;
+    res.x = (rand() % 11 - 5); // (x_ + y_) * z_;
+    res.y = (rand() % 11 - 5); // (x_ + y_) * z_;
+    res.z = (rand() % 11 - 5); // (x_ + y_) * z_;
     return res;
 }
 
 // Function to be completed by threads
 void* thread_ex(void* pack){
     struct thr_pack* arg = (struct thr_pack*) pack;
-    struct vec delta = field(*(arg->cubePos)[0], *(arg->cubePos)[1], *(arg->cubePos)[2]);
-
-    (*(arg->cubePos))[0] += 0.01 * delta.x;
-    (*(arg->cubePos))[1] += 0.01 * delta.y;
-    (*(arg->cubePos))[2] += 0.01 * delta.z;
     
-    //glm_mat4_identity(*(arg->model));
-    //glm_translate(*(arg->model), *(arg->cubePos));
+    int begin = (arg->numobjects / arg->numthreads) * arg->thread_id;
+    int end = begin + (arg->numobjects / arg->numthreads);
+    if(arg->thread_id == arg->numthreads-1){
+        end = arg->numobjects;
+    }
 
-    // additional calculations
-    mat4 calc;
-    glm_mat4_identity(calc);
-    glm_translate(calc, (*(arg->cubePos)));
-    for(int j = 0; j < 2500*4; ++j){
-        glm_mat4_transpose(calc);
+    for(int i = begin; i < end; ++i){
+        struct vec delta = field(*(arg->cubePos)[0], *(arg->cubePos)[1], *(arg->cubePos)[2]);
+
+        (*(arg->cubePos + i))[0] += 0.01 * delta.x;
+        (*(arg->cubePos + i))[1] += 0.01 * delta.y;
+        (*(arg->cubePos + i))[2] += 0.01 * delta.z;
+
+        // additional calculations
+        mat4 calc;
+        glm_mat4_identity(calc);
         glm_translate(calc, (*(arg->cubePos)));
-        glm_mat4_mul(calc, calc, calc);
+        for(int j = 0; j < 2500; ++j){
+            glm_mat4_transpose(calc);
+            glm_translate(calc, (*(arg->cubePos)));
+            glm_mat4_mul(calc, calc, calc);
+        }
+
     }
 
     pthread_mutex_lock(arg->mutex);
     (*(arg->counter))++;
-    //printf("INC NUM COUNTER %d\n", *(arg->counter));
     if(*(arg->counter) == arg->numthreads){
         pthread_cond_broadcast(arg->cond);
     }
     pthread_mutex_unlock(arg->mutex);
-
+   
     return 0;
 }
-
 
 
 
